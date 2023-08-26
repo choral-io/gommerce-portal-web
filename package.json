@@ -1,0 +1,13 @@
+{
+  "name": "gommerce-portal-web",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "@choral-io/gommerce-protobuf-node": "1.0.0-beta.6"
+  },
+  "engines": {
+    "node": ">=18 <19",
+    "npm": ">=9 <10"
+  }
+}
