@@ -1,10 +1,36 @@
 {
   "name": "gommerce-portal-web",
   "version": "1.0.0",
-  "private": true,
   "license": "MIT",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "build": "remix build",
+    "dev": "remix dev --manual",
+    "start": "remix-serve ./build/index.js",
+    "typecheck": "tsc"
+  },
   "dependencies": {
-    "@choral-io/gommerce-protobuf-node": "1.0.0-beta.6"
+    "@blueprintjs/core": "~5.3.2",
+    "@blueprintjs/icons": "~5.1.7",
+    "@choral-io/gommerce-protobuf-node": "1.0.0-beta.6",
+    "@remix-run/css-bundle": "~2.0.1",
+    "@remix-run/node": "~2.0.1",
+    "@remix-run/react": "~2.0.1",
+    "@remix-run/serve": "~2.0.1",
+    "isbot": "~3.7.0",
+    "react": "~18.2.0",
+    "react-dom": "~18.2.0"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "~2.0.1",
+    "@remix-run/eslint-config": "~2.0.1",
+    "@types/google-protobuf": "~3.15.7",
+    "@types/react": "~18.2.24",
+    "@types/react-dom": "~18.2.8",
+    "eslint": "~8.50.0",
+    "typescript": "~5.2.2"
   },
   "engines": {
     "node": ">=18 <19",

@@ -1,0 +1,6 @@
+@import url("@blueprintjs/icons/lib/css/blueprint-icons.css");
+@import url("@blueprintjs/core/lib/css/blueprint.css");
+
+.bp5-button {
+    user-select: none;
+}

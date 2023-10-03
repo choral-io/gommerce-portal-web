@@ -6,7 +6,10 @@
     "**/CVS": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "node_modules": true
+    "node_modules": true,
+    ".cache": true,
+    "build": true,
+    "public/build": true
   },
   "editor.formatOnSave": true,
   "editor.foldingStrategy": "indentation",

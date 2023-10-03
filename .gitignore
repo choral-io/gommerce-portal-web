@@ -1,4 +1,8 @@
 .DS_Store
 
-# Dependency directories
 node_modules/
+
+/.cache
+/build
+/public/build
+.env
