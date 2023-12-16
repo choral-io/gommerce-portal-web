@@ -1,6 +1,7 @@
-@import url("@blueprintjs/icons/lib/css/blueprint-icons.css");
-@import url("@blueprintjs/core/lib/css/blueprint.css");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-.bp5-button {
-    user-select: none;
+.container {
+    @apply mx-auto px-4;
 }

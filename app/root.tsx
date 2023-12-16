@@ -1,10 +1,7 @@
-import { cssBundleHref } from "@remix-run/css-bundle";
 import type { LinksFunction } from "@remix-run/node";
+import { cssBundleHref } from "@remix-run/css-bundle";
 import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
-import { FocusStyleManager } from "@blueprintjs/core";
 import globalStylesUrl from "~/styles/global.css";
-
-FocusStyleManager.onlyShowFocusOnTabs();
 
 export const links: LinksFunction = () => [
     { rel: "stylesheet", href: globalStylesUrl },

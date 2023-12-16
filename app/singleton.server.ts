@@ -1,6 +1,6 @@
 declare global {
     var __singletons__: {
-        [name: string]: unknown
+        [name: string]: unknown;
     };
 }
 
