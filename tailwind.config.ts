@@ -9,8 +9,8 @@ export default {
     },
     plugins: [require("@tailwindcss/typography"), require("daisyui")],
     daisyui: {
-        themes: ["winter", "sunset"],
-        darkTheme: "sunset",
+        themes: ["winter", "night"],
+        darkTheme: "night",
         logs: false,
     },
 } satisfies Config & { daisyui?: DaisyUIConfig };
