@@ -1,14 +1,14 @@
 import type { LinksFunction } from "@remix-run/node";
 import { cssBundleHref } from "@remix-run/css-bundle";
-import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
-import globalStylesUrl from "~/styles/global.css";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, useRouteError } from "@remix-run/react";
+import styles from "~/styles/global.css?url";
 
 export const links: LinksFunction = () => [
-    { rel: "stylesheet", href: globalStylesUrl },
+    { rel: "stylesheet", href: styles },
     ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
 ];
 
-export default function App() {
+export function Layout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en">
             <head>
@@ -18,11 +18,35 @@ export default function App() {
                 <Links />
             </head>
             <body>
-                <Outlet />
+                {children}
                 <ScrollRestoration />
                 <Scripts />
-                <LiveReload />
             </body>
         </html>
+    );
+}
+
+export default function App() {
+    return <Outlet />;
+}
+
+export function ErrorBoundary() {
+    const error = useRouteError();
+    return isRouteErrorResponse(error) ? (
+        <>
+            <h1>
+                {error.status} {error.statusText}
+            </h1>
+            <p>{error.data}</p>
+        </>
+    ) : error instanceof Error ? (
+        <>
+            <h1>Error</h1>
+            <p>{error.message}</p>
+            <p>The stack trace is:</p>
+            <pre>{error.stack}</pre>
+        </>
+    ) : (
+        <h1>Unknown Error</h1>
     );
 }
