@@ -1,4 +1,5 @@
 declare global {
+    // eslint-disable-next-line no-var
     var __singletons__: {
         [name: string]: unknown;
     };
