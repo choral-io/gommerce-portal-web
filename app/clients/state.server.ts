@@ -1,7 +1,13 @@
 import type { SessionData, SessionStorage, SessionIdStorageStrategy } from "@remix-run/node";
+import type { FlashSessionData } from "@remix-run/server-runtime";
 import { createSessionStorage } from "@remix-run/node";
 import { stateStoreServiceClient as stateStore } from "~/clients/grpc.server";
 import { v4 as uuidv4 } from "uuid";
+import invariant from "tiny-invariant";
+
+invariant(typeof process.env.GOMMERCE_CLIENT_TOKEN === "string", "environment variable GOMMERCE_CLIENT_TOKEN is required.");
+
+const clientToken = process.env.GOMMERCE_CLIENT_TOKEN;
 
 interface CookieSessionStorageOptions {
     bucket?: string;
@@ -11,14 +17,14 @@ interface CookieSessionStorageOptions {
 export function createStateSessionStorage<Data = SessionData, FlashData = Data>(
     options?: CookieSessionStorageOptions,
 ): SessionStorage<Data, FlashData> {
-    const bucket = options?.bucket || "sessions";
+    const bucket = options?.bucket ?? "sessions";
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     const upsert = async (id: string, data: string, expires?: Date): Promise<void> => {
         const key = `${bucket}:${id}`;
-        const metadata: { [key: string]: string } = {};
+        const metadata: Record<string, string> = {};
         if (expires) {
-            metadata["ttlInSeconds"] = Math.floor((expires.getTime() - Date.now()) / 1000).toString(10);
+            metadata.ttlInSeconds = Math.floor((expires.getTime() - Date.now()) / 1000).toString(10);
         }
         await stateStore.setState(
             {
@@ -27,33 +33,27 @@ export function createStateSessionStorage<Data = SessionData, FlashData = Data>(
                 metadata,
                 contentType: "application/json",
             },
-            { headers: { Authorization: `Basic ${process.env.GOMMERCE_CLIENT_TOKEN}` } },
+            { headers: { Authorization: `Basic ${clientToken}` } },
         );
     };
     return createSessionStorage<Data, FlashData>({
         cookie: options?.cookie,
         async createData(data, expires) {
             const id = uuidv4();
-            await upsert(id, JSON.stringify(data || null), expires);
+            await upsert(id, JSON.stringify(data), expires);
             return id;
         },
         async readData(id) {
             const key = `${bucket}:${id}`;
-            const { data } = await stateStore.getState(
-                { key },
-                { headers: { Authorization: `Basic ${process.env.GOMMERCE_CLIENT_TOKEN}` } },
-            );
-            return data && data.length > 0 ? JSON.parse(decoder.decode(data)) : null;
+            const { data } = await stateStore.getState({ key }, { headers: { Authorization: `Basic ${clientToken}` } });
+            return data.length > 0 ? (JSON.parse(decoder.decode(data)) as FlashSessionData<Data, FlashData>) : null;
         },
         async updateData(id, data, expires) {
-            await upsert(id, JSON.stringify(data || null), expires);
+            await upsert(id, JSON.stringify(data), expires);
         },
         async deleteData(id) {
             const key = `${bucket}:${id}`;
-            await stateStore.delState(
-                { key },
-                { headers: { Authorization: `Basic ${process.env.GOMMERCE_CLIENT_TOKEN}` } },
-            );
+            await stateStore.delState({ key }, { headers: { Authorization: `Basic ${clientToken}` } });
         },
     });
 }

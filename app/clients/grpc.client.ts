@@ -7,7 +7,7 @@ import { ChatsService } from "@proto/chats/v1beta/chats_connect";
 import { createRegistry } from "@bufbuild/protobuf";
 import { createGrpcGatewayTransport, createPromiseClient, googleRpcTypes } from "~/connect";
 
-invariant(import.meta.env.VITE_GRPC_ENDPOINT, "environment variable VITE_GRPC_ENDPOINT is required.");
+invariant(typeof import.meta.env.VITE_GRPC_ENDPOINT === "string", "environment variable VITE_GRPC_ENDPOINT is required.");
 
 const endpoint = import.meta.env.VITE_GRPC_ENDPOINT;
 

@@ -1,8 +1,6 @@
 declare global {
     // eslint-disable-next-line no-var
-    var __singletons__: {
-        [name: string]: unknown;
-    };
+    var __singletons__: Record<string, unknown> | undefined;
 }
 
 export function singleton<V>(name: string, factory: () => V): V {

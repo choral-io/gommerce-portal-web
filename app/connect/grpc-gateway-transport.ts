@@ -78,7 +78,7 @@ export function createGrpcGatewayTransport(options: GrpcGatewayTransportOptions)
                     if (!response.body) {
                         throw new Error("missing response body");
                     }
-                    await validateResponse(response);
+                    await validateResponse(response, options.jsonOptions);
                     return {
                         stream: false,
                         service,
@@ -138,7 +138,7 @@ export function createGrpcGatewayTransport(options: GrpcGatewayTransportOptions)
                     if (!response.body) {
                         throw new Error("missing response body");
                     }
-                    await validateResponse(response);
+                    await validateResponse(response, options.jsonOptions);
                     return {
                         stream: true,
                         service,

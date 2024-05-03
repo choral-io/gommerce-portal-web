@@ -13,6 +13,8 @@ module.exports = {
         ecmaFeatures: {
             jsx: true,
         },
+        project: ["./tsconfig.json"],
+        tsconfigRootDir: __dirname,
     },
     env: {
         browser: true,
@@ -66,7 +68,12 @@ module.exports = {
                     },
                 },
             },
-            extends: ["plugin:@typescript-eslint/recommended", "plugin:import/recommended", "plugin:import/typescript"],
+            extends: [
+                "plugin:@typescript-eslint/strict-type-checked",
+                "plugin:@typescript-eslint/stylistic-type-checked",
+                "plugin:import/recommended",
+                "plugin:import/typescript",
+            ],
         },
 
         // Node
