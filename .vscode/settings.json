@@ -22,5 +22,6 @@
   "editor.foldingStrategy": "indentation",
   "files.insertFinalNewline": true,
   "files.autoSave": "onWindowChange",
+  "typescript.tsdk": "node_modules/typescript/lib",
   "tailwindCSS.experimental.classRegex": [["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]]
 }
