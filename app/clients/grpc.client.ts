@@ -1,13 +1,16 @@
-import invariant from "tiny-invariant";
-import { SnowflakeService, PasswordService, DateTimeService } from "@proto/utils/v1/utils_connect";
-import { StateStoreService } from "@proto/state/v1beta/store_connect";
-import { UsersService } from "@proto/iam/v1beta/users_connect";
-import { TokensService } from "@proto/iam/v1beta/tokens_connect";
-import { ChatsService } from "@proto/chats/v1beta/chats_connect";
 import { createRegistry } from "@bufbuild/protobuf";
-import { createGrpcGatewayTransport, createPromiseClient, googleRpcTypes } from "~/connect";
+import { ChatsService } from "@proto/chats/v1beta/chats_connect";
+import { TokensService } from "@proto/iam/v1beta/tokens_connect";
+import { UsersService } from "@proto/iam/v1beta/users_connect";
+import { StateStoreService } from "@proto/state/v1beta/store_connect";
+import { DateTimeService, PasswordService, SnowflakeService } from "@proto/utils/v1/utils_connect";
+import invariant from "tiny-invariant";
+import { createClient, createGrpcGatewayTransport, googleRpcTypes } from "~/connect";
 
-invariant(typeof import.meta.env.VITE_GRPC_ENDPOINT === "string", "environment variable VITE_GRPC_ENDPOINT is required.");
+invariant(
+    typeof import.meta.env.VITE_GRPC_ENDPOINT === "string",
+    "environment variable VITE_GRPC_ENDPOINT is required.",
+);
 
 const endpoint = import.meta.env.VITE_GRPC_ENDPOINT;
 
@@ -19,16 +22,16 @@ export const transport = createGrpcGatewayTransport({
 });
 
 // utils/v1
-export const snowflakeServiceClient = createPromiseClient(SnowflakeService, transport);
-export const passwordServiceClient = createPromiseClient(PasswordService, transport);
-export const dateTimeServiceClient = createPromiseClient(DateTimeService, transport);
+export const snowflakeServiceClient = createClient(SnowflakeService, transport);
+export const passwordServiceClient = createClient(PasswordService, transport);
+export const dateTimeServiceClient = createClient(DateTimeService, transport);
 
 // state/v1beta
-export const stateStoreServiceClient = createPromiseClient(StateStoreService, transport);
+export const stateStoreServiceClient = createClient(StateStoreService, transport);
 
 // iam/v1beta
-export const usersServiceClient = createPromiseClient(UsersService, transport);
-export const tokensServiceClient = createPromiseClient(TokensService, transport);
+export const usersServiceClient = createClient(UsersService, transport);
+export const tokensServiceClient = createClient(TokensService, transport);
 
 // chats/v1beta
-export const chatsServiceClient = createPromiseClient(ChatsService, transport);
+export const chatsServiceClient = createClient(ChatsService, transport);

@@ -1,5 +1,5 @@
-import type { LinksFunction } from "@remix-run/node";
 import { cssBundleHref } from "@remix-run/css-bundle";
+import type { LinksFunction } from "@remix-run/node";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, useRouteError } from "@remix-run/react";
 import styles from "~/styles/global.css?url";
 

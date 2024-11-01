@@ -1,4 +1,4 @@
-// https://github.com/connectrpc/connect-es/blob/v1.4.0/packages/connect-web/src/grpc-web-transport.ts
+// https://github.com/connectrpc/connect-es/blob/v1.6.1/packages/connect-web/src/grpc-web-transport.ts
 
 import type {
     AnyMessage,
@@ -218,7 +218,7 @@ async function validateResponse(response: Response, options?: Partial<JsonReadOp
                 const tr = options?.typeRegistry;
                 for (const detail of errorState.details) {
                     const item = Any.fromJson(detail, options);
-                    details.push(tr ? item.unpack(tr) ?? item : item);
+                    details.push(tr ? (item.unpack(tr) ?? item) : item);
                 }
             }
             throw new ConnectError(errorState.message, errorState.code, undefined, details);

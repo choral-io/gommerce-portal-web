@@ -1,11 +1,14 @@
-import type { SessionData, SessionStorage, SessionIdStorageStrategy } from "@remix-run/node";
-import type { FlashSessionData } from "@remix-run/server-runtime";
+import type { SessionData, SessionIdStorageStrategy, SessionStorage } from "@remix-run/node";
 import { createSessionStorage } from "@remix-run/node";
-import { stateStoreServiceClient as stateStore } from "~/clients/grpc.server";
-import { v4 as uuidv4 } from "uuid";
+import type { FlashSessionData } from "@remix-run/server-runtime";
 import invariant from "tiny-invariant";
+import { v4 as uuidv4 } from "uuid";
+import { stateStoreServiceClient as stateStore } from "~/clients/grpc.server";
 
-invariant(typeof process.env.GOMMERCE_CLIENT_TOKEN === "string", "environment variable GOMMERCE_CLIENT_TOKEN is required.");
+invariant(
+    typeof process.env.GOMMERCE_CLIENT_TOKEN === "string",
+    "environment variable GOMMERCE_CLIENT_TOKEN is required.",
+);
 
 const clientToken = process.env.GOMMERCE_CLIENT_TOKEN;
 

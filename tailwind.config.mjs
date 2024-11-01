@@ -1,6 +1,4 @@
-import type { Config } from "tailwindcss";
-import type { Config as DaisyUIConfig } from "daisyui";
-
+/** @type { import("tailwindcss").Config & { daisyui?: import("daisyui").Config } } */
 export default {
     darkMode: "media",
     content: ["./app/**/*.{js,jsx,ts,tsx}"],
@@ -13,4 +11,4 @@ export default {
         darkTheme: "night",
         logs: false,
     },
-} satisfies Config & { daisyui?: DaisyUIConfig };
+};
