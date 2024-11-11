@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 export interface EventSourceOptions {
     init?: EventSourceInit;
     event?: string;
+    enabled?: boolean;
 }
 
 export type EventSourceMap = Map<string, { count: number; source: EventSource }>;
@@ -17,11 +18,18 @@ export const EventSourceProvider = context.Provider;
  * @param options The options to pass to the EventSource constructor
  * @returns The last event received from the server
  */
-export function useEventSource(url: string | URL, { event = "message", init }: EventSourceOptions = {}) {
+export function useEventSource(
+    url: string | URL,
+    { init, event = "message", enabled = true }: EventSourceOptions = {},
+) {
     const map = useContext(context);
     const [data, setData] = useState<string | null>(null);
 
     useEffect(() => {
+        if (!enabled) {
+            return undefined;
+        }
+
         const key = [url.toString(), init?.withCredentials].join("::");
 
         const value = map.get(key) ?? {
@@ -50,7 +58,7 @@ export function useEventSource(url: string | URL, { event = "message", init }: E
                 map.delete(key);
             }
         };
-    }, [url, event, init, map]);
+    }, [url, event, init, map, enabled]);
 
     return data;
 }
