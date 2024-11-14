@@ -1,17 +1,17 @@
-// https://github.com/connectrpc/connect-es/blob/v1.6.1/packages/connect-web/src/grpc-web-transport.ts
+// https://github.com/connectrpc/connect-es/blob/v2.0.0-rc.3/packages/connect-web/src/grpc-web-transport.ts
 
 import type {
-    AnyMessage,
+    DescMessage,
+    DescMethodStreaming,
+    DescMethodUnary,
     JsonReadOptions,
     JsonValue,
     JsonWriteOptions,
-    Message,
-    MessageType,
-    MethodInfo,
-    PartialMessage,
-    ServiceType,
+    MessageInitShape,
+    MessageShape,
 } from "@bufbuild/protobuf";
-import { Any, MethodKind } from "@bufbuild/protobuf";
+import { fromJson } from "@bufbuild/protobuf";
+import { AnySchema } from "@bufbuild/protobuf/wkt";
 import type {
     ContextValues,
     Interceptor,
@@ -22,7 +22,12 @@ import type {
     UnaryResponse,
 } from "@connectrpc/connect";
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
-import { createMethodUrl, runStreamingCall, runUnaryCall } from "@connectrpc/connect/protocol";
+import {
+    createClientMethodSerializers,
+    createMethodUrl,
+    runStreamingCall,
+    runUnaryCall,
+} from "@connectrpc/connect/protocol";
 import { contentTypeJson, headerContentType, headerTimeout } from "@connectrpc/connect/protocol-grpc";
 
 export interface GrpcGatewayTransportOptions {
@@ -36,17 +41,16 @@ export interface GrpcGatewayTransportOptions {
 
 export function createGrpcGatewayTransport(options: GrpcGatewayTransportOptions): Transport {
     assertFetchApi();
-    const decoder = new TextDecoder();
     return {
-        async unary<I extends Message<I> = AnyMessage, O extends Message<O> = AnyMessage>(
-            service: ServiceType,
-            method: MethodInfo<I, O>,
+        async unary<I extends DescMessage, O extends DescMessage>(
+            method: DescMethodUnary<I, O>,
             signal: AbortSignal | undefined,
             timeoutMs: number | undefined,
             header: Headers,
-            message: PartialMessage<I>,
+            message: MessageInitShape<I>,
             contextValues?: ContextValues,
         ): Promise<UnaryResponse<I, O>> {
+            const { serialize, parse } = createClientMethodSerializers(method, false, options.jsonOptions);
             timeoutMs = timeoutMs === undefined ? options.defaultTimeoutMs : timeoutMs <= 0 ? undefined : timeoutMs;
             return runUnaryCall<I, O>({
                 interceptors: options.interceptors,
@@ -54,15 +58,10 @@ export function createGrpcGatewayTransport(options: GrpcGatewayTransportOptions)
                 timeoutMs,
                 req: {
                     stream: false,
-                    service,
-                    method,
-                    url: createMethodUrl(options.baseUrl, service, method),
-                    init: {
-                        method: "POST",
-                        credentials: options.credentials ?? "same-origin",
-                        redirect: "error",
-                        mode: "cors",
-                    },
+                    service: method.parent,
+                    method: method,
+                    requestMethod: "POST",
+                    url: createMethodUrl(options.baseUrl, method),
                     header: requestHeader(timeoutMs, header),
                     contextValues: contextValues ?? createContextValues(),
                     message,
@@ -70,35 +69,47 @@ export function createGrpcGatewayTransport(options: GrpcGatewayTransportOptions)
                 next: async (req: UnaryRequest<I, O>): Promise<UnaryResponse<I, O>> => {
                     const fetch = options.fetch ?? globalThis.fetch;
                     const response = await fetch(req.url, {
-                        ...req.init,
+                        credentials: options.credentials ?? "same-origin",
+                        redirect: "error",
+                        mode: "cors",
+                        method: req.requestMethod,
                         headers: req.header,
                         signal: req.signal,
-                        body: req.message.toJsonString(options.jsonOptions),
+                        body: serialize(req.message),
                     });
                     if (!response.body) {
                         throw new Error("missing response body");
                     }
-                    await validateResponse(response, options.jsonOptions);
+                    const data: Uint8Array = new Uint8Array(await response.arrayBuffer());
+                    if (response.status < 200 || response.status >= 300) {
+                        throw errorFromJsonBytes(
+                            data,
+                            response.headers,
+                            new ConnectError("unexpected error", Code.Unknown),
+                            options.jsonOptions,
+                        );
+                    }
                     return {
                         stream: false,
-                        service,
-                        method,
+                        service: method.parent,
+                        method: method,
                         header: response.headers,
-                        message: method.O.fromJsonString(await response.text(), options.jsonOptions),
+                        message: parse(data),
                         trailer: new Headers(),
                     };
                 },
             });
         },
-        async stream<I extends Message<I> = AnyMessage, O extends Message<O> = AnyMessage>(
-            service: ServiceType,
-            method: MethodInfo<I, O>,
+        async stream<I extends DescMessage, O extends DescMessage>(
+            method: DescMethodStreaming<I, O>,
             signal: AbortSignal | undefined,
             timeoutMs: number | undefined,
             header: HeadersInit | undefined,
-            input: AsyncIterable<PartialMessage<I>>,
+            input: AsyncIterable<MessageInitShape<I>>,
             contextValues?: ContextValues,
         ): Promise<StreamResponse<I, O>> {
+            const serialize = createClientMethodSerializers(method, false, options.jsonOptions).serialize;
+            const parseJson = (value: JsonValue) => fromJson(method.output, value, options.jsonOptions);
             timeoutMs = timeoutMs === undefined ? options.defaultTimeoutMs : timeoutMs <= 0 ? undefined : timeoutMs;
             return runStreamingCall<I, O>({
                 interceptors: options.interceptors,
@@ -106,78 +117,55 @@ export function createGrpcGatewayTransport(options: GrpcGatewayTransportOptions)
                 timeoutMs,
                 req: {
                     stream: true,
-                    service,
-                    method,
-                    url: createMethodUrl(options.baseUrl, service, method),
-                    init: {
-                        method: "POST",
-                        credentials: options.credentials ?? "same-origin",
-                        redirect: "error",
-                        mode: "cors",
-                    },
+                    service: method.parent,
+                    method: method,
+                    requestMethod: "POST",
+                    url: createMethodUrl(options.baseUrl, method),
                     header: requestHeader(timeoutMs, header),
                     contextValues: contextValues ?? createContextValues(),
                     message: input,
                 },
                 next: async (req: StreamRequest<I, O>): Promise<StreamResponse<I, O>> => {
-                    if (method.kind != MethodKind.ServerStreaming) {
+                    if (method.methodKind != "server_streaming") {
                         throw new Error("The fetch API does not support streaming request bodies");
                     }
                     const result = await req.message[Symbol.asyncIterator]().next();
                     if (result.done) {
                         throw new Error("missing request message");
                     }
-                    const message = result.value;
                     const fetch = options.fetch ?? globalThis.fetch;
                     const response = await fetch(req.url, {
-                        ...req.init,
+                        credentials: options.credentials ?? "same-origin",
+                        redirect: "error",
+                        mode: "cors",
+                        method: req.requestMethod,
                         headers: req.header,
                         signal: req.signal,
-                        body: message.toJsonString(options.jsonOptions),
+                        body: serialize(result.value),
                     });
                     if (!response.body) {
                         throw new Error("missing response body");
                     }
-                    await validateResponse(response, options.jsonOptions);
+                    if (response.status < 200 || response.status >= 300) {
+                        throw errorFromJsonBytes(
+                            new Uint8Array(await response.arrayBuffer()),
+                            response.headers,
+                            new ConnectError("unexpected error", Code.Unknown),
+                            options.jsonOptions,
+                        );
+                    }
                     return {
                         stream: true,
-                        service,
-                        method,
-                        header: response.headers,
-                        message: readAsyncIterable(response.body, method.O, decoder, options.jsonOptions),
+                        service: method.parent,
+                        method: method,
+                        header: new Headers(),
+                        message: readAsyncIterable(response.body, parseJson, new TextDecoder()),
                         trailer: new Headers(),
                     };
                 },
             });
         },
     };
-}
-
-function isStreamItem(value: unknown): value is { result: JsonValue } {
-    return value !== null && typeof value === "object" && "result" in value;
-}
-
-async function* readAsyncIterable<O extends Message<O>>(
-    stream: ReadableStream<Uint8Array>,
-    output: MessageType<O>,
-    decoder: TextDecoder,
-    options?: Partial<JsonReadOptions>,
-): AsyncIterable<O> {
-    const reader = stream.getReader();
-    let buffer = "";
-    for await (const chunk of { [Symbol.asyncIterator]: () => ({ next: () => reader.read() }) }) {
-        buffer += decoder.decode(chunk, { stream: true });
-        const chunks = buffer.split(/\r?\n/);
-        buffer = chunks.pop() ?? "";
-        for (const chunk of chunks) {
-            const item: unknown = JSON.parse(chunk);
-            if (isStreamItem(item)) {
-                yield output.fromJson(item.result, options);
-            } else {
-                throw new Error("unexpected stream result");
-            }
-        }
-    }
 }
 
 function assertFetchApi(): void {
@@ -208,22 +196,78 @@ function isErrorState(value: unknown): value is { code: number; message: string;
     );
 }
 
-async function validateResponse(response: Response, options?: Partial<JsonReadOptions>): Promise<void> {
-    if (response.status < 200 || response.status >= 300) {
-        const content = await response.text();
-        const errorState: unknown = JSON.parse(content);
-        if (isErrorState(errorState)) {
-            const details: Message[] = [];
-            if (Array.isArray(errorState.details)) {
-                const tr = options?.typeRegistry;
-                for (const detail of errorState.details) {
-                    const item = Any.fromJson(detail, options);
-                    details.push(tr ? (item.unpack(tr) ?? item) : item);
-                }
+function isStreamValue(value: unknown): value is { result: JsonValue } {
+    return value !== null && typeof value === "object" && "result" in value && value.result !== null;
+}
+
+function isStreamError(value: unknown): value is { error: JsonValue } {
+    return value !== null && typeof value === "object" && "error" in value && value.error !== null;
+}
+
+function errorFromJsonValue(
+    value: unknown,
+    metadata: HeadersInit,
+    fallback: ConnectError,
+    options?: Partial<JsonReadOptions>,
+): ConnectError {
+    let errorState;
+    if (isErrorState(value)) {
+        errorState = value;
+    } else if (isStreamError(value) && isErrorState(value.error)) {
+        errorState = value.error;
+    } else {
+        fallback.cause = new Error("unexpected error response");
+        throw fallback;
+    }
+    const error = new ConnectError(errorState.message, errorState.code, metadata);
+    error.details =
+        errorState.details?.map((d) => {
+            const any = fromJson(AnySchema, d, options);
+            return {
+                type: any.typeUrl.replace(/^type\.googleapis\.com\//, ""),
+                value: any.value,
+                debug: d,
+            };
+        }) ?? [];
+    return error;
+}
+
+function errorFromJsonBytes(
+    bytes: Uint8Array,
+    metadata: HeadersInit,
+    fallback: ConnectError,
+    options?: Partial<JsonReadOptions>,
+): ConnectError {
+    let value: unknown;
+    try {
+        value = JSON.parse(new TextDecoder().decode(bytes));
+    } catch (e) {
+        fallback.cause = e;
+        throw fallback;
+    }
+    return errorFromJsonValue(value, metadata, fallback, options);
+}
+
+async function* readAsyncIterable<O extends DescMessage>(
+    stream: ReadableStream<Uint8Array>,
+    parseJson: (data: JsonValue) => MessageShape<O>,
+    decoder: TextDecoder,
+): AsyncIterable<MessageShape<O>> {
+    const reader = stream.getReader();
+    let buffer = "";
+    for await (const chunk of { [Symbol.asyncIterator]: () => ({ next: () => reader.read() }) }) {
+        buffer += decoder.decode(chunk, { stream: true });
+        const chunks = buffer.split(/\r?\n/);
+        buffer = chunks.pop() ?? "";
+        for (const chunk of chunks) {
+            const item: unknown = JSON.parse(chunk);
+            if (isStreamValue(item)) {
+                yield parseJson(item.result);
+            } else if (isStreamError(item)) {
+                throw errorFromJsonValue(item.error, new Headers(), new ConnectError("unexpected error", Code.Unknown));
+            } else {
+                throw new Error("unexpected stream result");
             }
-            throw new ConnectError(errorState.message, errorState.code, undefined, details);
-        } else {
-            throw new ConnectError("unexpected error", Code.Unknown);
         }
     }
 }

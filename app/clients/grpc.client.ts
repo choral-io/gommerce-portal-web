@@ -1,11 +1,11 @@
 import { createRegistry } from "@bufbuild/protobuf";
-import { ChatsService } from "@proto/chats/v1beta/chats_connect";
-import { TokensService } from "@proto/iam/v1beta/tokens_connect";
-import { UsersService } from "@proto/iam/v1beta/users_connect";
-import { StateStoreService } from "@proto/state/v1beta/store_connect";
-import { DateTimeService, PasswordService, SnowflakeService } from "@proto/utils/v1/utils_connect";
+import { ChatsService } from "@gommerce/chats/v1beta/chats_pb";
+import { TokensService } from "@gommerce/iam/v1beta/tokens_pb";
+import { UsersService } from "@gommerce/iam/v1beta/users_pb";
+import { StateStoreService } from "@gommerce/state/v1beta/store_pb";
+import { DateTimeService, PasswordService, SnowflakeService } from "@gommerce/utils/v1/utils_pb";
 import invariant from "tiny-invariant";
-import { createClient, createGrpcGatewayTransport, googleRpcTypes } from "~/connect";
+import { createClient, createGrpcGatewayTransport, googleRpcTypes, wellKnownTypes } from "~/connect";
 
 invariant(
     typeof import.meta.env.VITE_GRPC_ENDPOINT === "string",
@@ -17,7 +17,7 @@ const endpoint = import.meta.env.VITE_GRPC_ENDPOINT;
 export const transport = createGrpcGatewayTransport({
     baseUrl: endpoint,
     jsonOptions: {
-        typeRegistry: createRegistry(...googleRpcTypes),
+        registry: createRegistry(...googleRpcTypes, ...wellKnownTypes),
     },
 });
 

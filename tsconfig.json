@@ -24,7 +24,8 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./app/*"],
-      "@proto/*": ["./node_modules/@choral-io/gommerce-protobuf-es/*"]
+      "@gommerce/*": ["./node_modules/@choral-io/gommerce-protobuf-es/gommerce/*"],
+      "@google/*": ["./node_modules/@choral-io/gommerce-protobuf-es/google/*"]
     },
 
     // Vite takes care of building everything, not tsc.
