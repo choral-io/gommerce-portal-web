@@ -1,4 +1,4 @@
-// https://github.com/connectrpc/connect-es/blob/v2.0.0-rc.3/packages/connect-web/src/grpc-web-transport.ts
+// https://github.com/connectrpc/connect-es/blob/v2.0.0/packages/connect-web/src/grpc-web-transport.ts
 
 import type {
     DescMessage,
