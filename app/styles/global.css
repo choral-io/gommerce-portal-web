@@ -1,6 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@plugin '@tailwindcss/typography';
+
+@plugin "daisyui" {
+    logs: false;
+    themes:
+        winter --default,
+        night --prefersdark;
+}
+
+@layer base {
+    :root {
+        @apply bg-cover bg-fixed bg-center;
+    }
+}
 
 .container {
     @apply mx-auto px-4;
