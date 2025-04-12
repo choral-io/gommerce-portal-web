@@ -21,9 +21,4 @@ export default defineConfig({
         tailwindcss(),
         tsconfigPaths(),
     ],
-    resolve: {
-        alias: {
-            "@tabler/icons-react": "@tabler/icons-react/dist/esm/icons/index.mjs",
-        },
-    },
 });
